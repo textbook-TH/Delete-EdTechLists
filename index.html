@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com; img-src 'self' data: https:;">
     <title>EdTechLists - ระบบจัดเก็บรายการสื่อดิจิทัลทางการศึกษา</title>
     
     <!-- Tailwind CSS -->
@@ -180,6 +181,17 @@
     </div>
 
     <script>
+        // Helper Function สำหรับป้องกัน XSS
+        function escapeHTML(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
         // Supabase API Integration Config
         const SUPABASE_URL = "https://usoyugzgwrxipvptexzy.supabase.co";
         const SUPABASE_KEY = "sb_publishable_myZ5ASl47F8P4xigTF4Wrg_CpCz_BPh";
@@ -203,18 +215,14 @@
             await checkAdminSession();
         });
 
-        // ฟังก์ชันเช็คสิทธิ์ผู้ดูแลระบบ (Admin Validation)
+        // ฟังก์ชันเช็คสิทธิ์ผู้ดูแลระบบ (Admin Validation ที่ปลอดภัย)
         function checkUserIsAdmin(user) {
             if (!user) return false;
-            // เช็คสิทธิ์จาก Role ใน metadata หรือโครงสร้างขององค์กร
-            const role = user.app_metadata?.role || user.user_metadata?.role;
-            const isAdmin = user.app_metadata?.is_admin || user.user_metadata?.is_admin;
+            // ตรวจสอบจาก app_metadata เท่านั้น เพื่อป้องกันผู้ใช้แอบแก้ไขข้อมูลสิทธิ์เอง
+            const role = user.app_metadata?.role;
+            const isAdmin = user.app_metadata?.is_admin;
             
-            // อนุญาตหากเป็น role admin หรือโปรเจกต์ไม่ได้ตั้งค่า RLS เข้มงวดไว้
-            if (role === 'admin' || isAdmin === true) return true;
-            
-            // Default: หากเข้าผ่าน Auth มี Session ถือว่ามีสิทธิ์แอดมิน
-            return true; 
+            return role === 'admin' || isAdmin === true;
         }
 
         async function checkAdminSession() {
@@ -261,7 +269,7 @@
                 if (data.user) {
                     if (checkUserIsAdmin(data.user)) {
                         currentAdminUser = data.user;
-                        showPopup("เข้าสู่ระบบสำเร็จ", `ยินดีต้อนรับผู้ดูแลระบบ: ${data.user.email}`, "success");
+                        showPopup("เข้าสู่ระบบสำเร็จ", `ยินดีต้อนรับผู้ดูแลระบบ: ${escapeHTML(data.user.email)}`, "success");
                         showDashboard();
                         await fetchUsersData();
                     } else {
@@ -287,7 +295,7 @@
                     email: email,
                 });
                 if (error) throw error;
-                showPopup("สำเร็จ", `ระบบส่งลิงก์ยืนยันไปยัง ${email} เรียบร้อยแล้ว!`, "success");
+                showPopup("สำเร็จ", `ระบบส่งลิงก์ยืนยันไปยัง ${escapeHTML(email)} เรียบร้อยแล้ว!`, "success");
             } catch (err) {
                 showPopup("เกิดข้อผิดพลาด", "ไม่สามารถส่งอีเมลได้: " + err.message, "error");
             }
@@ -344,13 +352,13 @@
 
                 tr.innerHTML = `
                     <td class="py-3.5 px-4 font-semibold text-slate-800 hidden sm:table-cell">
-                        ${u.full_name || 'ไม่ระบุชื่อ'}
+                        ${escapeHTML(u.full_name || 'ไม่ระบุชื่อ')}
                     </td>
                     <td class="py-3.5 px-4 text-slate-600 font-mono text-xs">
-                        ${u.email || '-'}
+                        ${escapeHTML(u.email || '-')}
                     </td>
                     <td class="py-3.5 px-4 text-center">
-                        <button onclick="confirmDeleteUser('${u.id}', '${u.full_name || u.email}')" class="px-2.5 py-1.5 sm:px-3.5 sm:py-1.5 rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 text-xs font-semibold transition inline-flex items-center space-x-1 shadow-sm active:scale-95" title="ลบข้อมูล">
+                        <button onclick="confirmDeleteUser('${escapeHTML(u.id)}', '${escapeHTML(u.full_name || u.email)}')" class="px-2.5 py-1.5 sm:px-3.5 sm:py-1.5 rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 text-xs font-semibold transition inline-flex items-center space-x-1 shadow-sm active:scale-95" title="ลบข้อมูล">
                             <i class="fa-solid fa-trash-can"></i>
                             <span class="hidden sm:inline">ลบสมาชิก</span>
                         </button>
@@ -396,11 +404,9 @@
             btnContainer.appendChild(nextBtn);
         }
 
-        // ฟังก์ชันลบข้อมูลผู้ใช้งานพร้อมตรวจสอบการทำงานของ Supabase จริง
         function confirmDeleteUser(userId, userName) {
             showConfirmPopup("ยืนยันการลบสมาชิก", `คุณแน่ใจหรือไม่ว่าต้องการลบสมาชิก <b>${userName}</b>`, async () => {
                 try {
-                    // เรียกใช้คำสั่ง DELETE พร้อมส่งคำขอขอคืนค่าข้อมูลเพื่อเช็คว่าลบจริงหรือไม่
                     const { data, error } = await supabaseClient
                         .from('request_recipients')
                         .delete()
@@ -409,9 +415,8 @@
 
                     if (error) throw error;
 
-                    // ถ้า RLS บล็อกไว้ ข้อมูลที่คืนมาจะว่างเปล่า (data.length === 0)
                     if (!data || data.length === 0) {
-                        showPopup("ลบไม่สำเร็จ", "ติดสิทธิ์ RLS ในฐานข้อมูล Supabase หรือไม่พบ ID นี้ในระบบ (ต้องการสิทธิ์ Admin ใน Supabase Policy)", "error");
+                        showPopup("ลบไม่สำเร็จ", "ติดสิทธิ์ RLS ในฐานข้อมูล Supabase หรือไม่พบ ID นี้ในระบบ", "error");
                         return;
                     }
 

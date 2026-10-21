@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UpSkillPulse - ระบบจัดการข้อมูลผู้ขอใช้บริการ (Admin Only)</title>
+    <title>EdTechLists - ระบบจัดเก็บรายการสื่อดิจิทัลทางการศึกษา</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -46,10 +46,9 @@
                 </div>
                 <div>
                     <div class="flex items-center space-x-2">
-                        <span class="text-xl sm:text-2xl font-bold tracking-wide text-white">UpSkillPulse</span>
-                        <span class="bg-red-500/20 text-red-400 text-xs px-2 py-0.5 rounded-md border border-red-500/30 font-semibold">Admin System</span>
+                        <span class="text-xl sm:text-2xl font-bold tracking-wide text-white">EdTechLists</span>                   
                     </div>
-                    <p class="text-xs text-blue-200/80 tracking-wider">ระบบจัดการข้อมูลผู้ขอใช้บริการ (เฉพาะผู้ดูแลระบบ)</p>
+                    <p class="text-xs text-blue-200/80 tracking-wider">ระบบจัดเก็บรายการสื่อดิจิทัลทางการศึกษา</p>
                 </div>
             </div>
 
@@ -71,7 +70,7 @@
                         <img src="https://raw.githubusercontent.com/textbook-TH/Delete-User/main/logo.png" alt="Logo" class="w-full h-full object-contain">
                     </div>
                     <h2 class="text-xl font-bold">เข้าสู่ระบบผู้ดูแลระบบ (Admin)</h2>
-                    <p class="text-xs text-blue-100/80 mt-1">เฉพาะบัญชีที่มีสิทธิ์ Admin เท่านั้นที่สามารถจัดการข้อมูลได้</p>
+                    <p class="text-xs text-blue-100/80 mt-1">เฉพาะ Admin เท่านั้นที่สามารถจัดการข้อมูลได้</p>
                 </div>
 
                 <form onsubmit="handleLoginSubmit(event)" class="p-6 space-y-4">
@@ -110,8 +109,7 @@
         <section id="adminDashboardSection" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div class="bg-white rounded-2xl p-6 shadow-catalog border border-slate-100 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
-                    <h1 class="text-2xl font-bold text-slate-800">รายชื่อผู้ขอใช้บริการ / ผู้รับบริการทั้งหมด</h1>
-                    <p class="text-xs text-slate-500 mt-1">จัดการผู้รับบริการที่ผูกกับตาราง <code class="bg-slate-100 text-rose-600 px-1 py-0.5 rounded font-mono">request_recipients</code> ในระบบ Supabase</p>
+                    <h1 class="text-2xl font-bold text-slate-800">รายชื่อผู้ขอใช้บริการ</h1>                   
                 </div>
                 <div class="flex items-center space-x-2 w-full sm:w-auto">
                     <div class="relative flex-grow sm:w-64">

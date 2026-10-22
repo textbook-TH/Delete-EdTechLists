@@ -215,14 +215,31 @@
             await checkAdminSession();
         });
 
-        // ฟังก์ชันเช็คสิทธิ์ผู้ดูแลระบบ (Admin Validation ที่ปลอดภัย)
-        function checkUserIsAdmin(user) {
+        // ฟังก์ชันเช็คสิทธิ์ผู้ดูแลระบบแบบ Dynamic (เช็กจากตาราง profiles โดยไม่ระบุ Hardcode Email)
+        async function checkUserIsAdmin(user) {
             if (!user) return false;
-            // ตรวจสอบจาก app_metadata เท่านั้น เพื่อป้องกันผู้ใช้แอบแก้ไขข้อมูลสิทธิ์เอง
-            const role = user.app_metadata?.role;
-            const isAdmin = user.app_metadata?.is_admin;
-            
-            return role === 'admin' || isAdmin === true;
+
+            // 1. เช็กสิทธิ์จาก Metadata
+            if (user.app_metadata?.role === 'admin' || user.user_metadata?.role === 'admin' || user.app_metadata?.is_admin === true) {
+                return true;
+            }
+
+            // 2. เช็กสิทธิ์จริงจากตาราง profiles ใน Supabase
+            try {
+                const { data, error } = await supabaseClient
+                    .from('profiles')
+                    .select('role')
+                    .eq('id', user.id)
+                    .maybeSingle();
+
+                if (!error && data) {
+                    return data.role === 'admin';
+                }
+            } catch (err) {
+                console.error("Error checking admin profile:", err);
+            }
+
+            return false;
         }
 
         async function checkAdminSession() {
@@ -230,7 +247,8 @@
             const { data: { session } } = await supabaseClient.auth.getSession();
             
             if (session && session.user) {
-                if (checkUserIsAdmin(session.user)) {
+                const isAdmin = await checkUserIsAdmin(session.user);
+                if (isAdmin) {
                     currentAdminUser = session.user;
                     showDashboard();
                     await fetchUsersData();
@@ -267,7 +285,8 @@
                 }
 
                 if (data.user) {
-                    if (checkUserIsAdmin(data.user)) {
+                    const isAdmin = await checkUserIsAdmin(data.user);
+                    if (isAdmin) {
                         currentAdminUser = data.user;
                         showPopup("เข้าสู่ระบบสำเร็จ", `ยินดีต้อนรับผู้ดูแลระบบ: ${escapeHTML(data.user.email)}`, "success");
                         showDashboard();
@@ -301,7 +320,7 @@
             }
         }
 
-        // ดึงข้อมูลเฉพาะสมาชิกที่สมัครสำเร็จจากตาราง profiles เท่านั้น
+        // ดึงข้อมูลเฉพาะสมาชิกที่สมัครสำเร็จจากตาราง profiles
         async function fetchUsersData() {
             if (!supabaseClient) return;
             try {

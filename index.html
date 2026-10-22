@@ -301,12 +301,14 @@
             }
         }
 
+        // ดึงข้อมูลเฉพาะสมาชิกที่สมัครสำเร็จจากตาราง profiles เท่านั้น
         async function fetchUsersData() {
             if (!supabaseClient) return;
             try {
                 const { data, error } = await supabaseClient
-                    .from('request_recipients')
+                    .from('profiles')
                     .select('*')
+                    .eq('role', 'user')
                     .order('created_at', { ascending: false });
 
                 if (!error && data) {
@@ -404,11 +406,12 @@
             btnContainer.appendChild(nextBtn);
         }
 
+        // ดำเนินการลบเฉพาะสิทธิ์สมาชิกออกจากตาราง profiles
         function confirmDeleteUser(userId, userName) {
             showConfirmPopup("ยืนยันการลบสมาชิก", `คุณแน่ใจหรือไม่ว่าต้องการลบสมาชิก <b>${userName}</b>`, async () => {
                 try {
                     const { data, error } = await supabaseClient
-                        .from('request_recipients')
+                        .from('profiles')
                         .delete()
                         .eq('id', userId)
                         .select();
